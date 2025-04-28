@@ -90,6 +90,26 @@ test('response 400 bad request when url or title is missed', async () => {
   assert(response.body.error.includes('Blog validation failed'));
 });
 
+test('deletion of a blog', async () => {
+  const blogsAtStart = await api.get('/api/blogs');
+  const blogToDelete = blogsAtStart.body[0];
+
+  await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
+
+  const blogsAtEnd = await api.get('/api/blogs');
+  assert.strictEqual(blogsAtEnd.body.length, helper.initialBlogs.length - 1);
+});
+
+test('update a blog', async () => {
+  const blogsAtStart = await api.get('/api/blogs');
+  let blogToUpdate = blogsAtStart.body[0];
+  blogToUpdate.likes = blogToUpdate.likes + 1;
+
+  const result = await api.put(`/api/blogs/${blogToUpdate.id}`).send(blogToUpdate).expect(200).expect('Content-Type',/application\/json/);
+
+  assert.deepStrictEqual(result.body, blogToUpdate);
+});
+
 after(async () => {
   await mongoose.connection.close();
 });
