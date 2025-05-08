@@ -1,7 +1,6 @@
 const User = require('../models/user');
 const app = require('../app');
 const supertest = require('supertest');
-const usersRouter = require('../controllers/users');
 const api = supertest(app);
 
 const initialBlogs = [

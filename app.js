@@ -24,7 +24,10 @@ app.use('/api/users',usersRouter);
 
 app.get('/api/blogs', async (request, response, next) => {
   try {
-    const blogs = await Blog.find({}).populate('user', 'username name id');
+    if (request.user === null) {
+      return response.status(401).json({error: 'unauthorized'});
+    }
+    const blogs = await Blog.find({user: request.user.id}).populate('user', 'username name id');
     response.json(blogs);  
   } catch (exception) {
     next(exception);
@@ -63,6 +66,11 @@ app.delete('/api/blogs/:id', async (request, response, next) => {
     }
 
     const result = await Blog.findByIdAndDelete(request.params.id);
+    if (!result) {
+      return response.status(404).json({error: 'Blog not found'});
+    }
+
+    await User.findByIdAndUpdate(result.user, { $pull: {blogs: blog._id}});
     
     response.set('X-Deleted-Resource', result.id);
     response.status(204).end();
@@ -81,6 +89,11 @@ app.put('/api/blogs/:id', async (request, response, next) => {
     next(exception);
   }
 });
+
+if (process.env.NODE_ENV === 'test') {
+  const testingRouter = require('./controllers/testing');
+  app.use('/api/testing', testingRouter);
+}
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({error: 'unknown endpoint'});

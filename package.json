@@ -17,7 +17,10 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development nodemon index.js",
-    "test": "cross-env NODE_ENV=test node --test"
+    "test": "cross-env NODE_ENV=test node --test",
+    "build:ui": "rmdir /s /q dist && cd ..\\bloglistfrontend && npm run build && xcopy dist ..\\bloglistBackend\\dist /E /I /Y",
+    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push",
+    "start:test": "cross-env NODE_ENV=test node index.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

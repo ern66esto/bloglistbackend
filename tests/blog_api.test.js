@@ -121,23 +121,18 @@ describe('creation of blogs once users is created', () => {
   });
  
   test('blogs are returned as json', async () => {
+    const userToken = await helper.userToken('Michael Chan');
     await api
-      .get('/api/blogs')
+      .get('/api/blogs').set('Authorization', `Bearer ${userToken}`)
       .expect(200)
       .expect('Content-Type',/application\/json/);
   });
   
-  test('there are three blogs', async () => {
-    const response = await api.get('/api/blogs');
+  test('there is one blog for Michael Chan', async () => {
+    const userToken = await helper.userToken('Michael Chan');
+    const response = await api.get('/api/blogs').set('Authorization', `Bearer ${userToken}`);
   
-    assert.strictEqual(response.body.length, helper.initialBlogs.length);
-  });
-  
-  test('one blog has 7 likes', async () => {
-    const response = await api.get('/api/blogs');   
-
-    const blog = response.body.find(l => l.likes === 7);
-    assert.strictEqual(blog.likes, 7);
+    assert.strictEqual(response.body.length, 1);
   });
   
   test('a valid blog can be added', async () => {
@@ -150,10 +145,10 @@ describe('creation of blogs once users is created', () => {
     
     const userToken = await helper.userToken('Michael Chan');
     await api.post('/api/blogs').set('Authorization', `Bearer ${userToken}`).send(newBlog).expect(201).expect('Content-Type',/application\/json/);
-    const response = await api.get('/api/blogs');
+    const response = await api.get('/api/blogs').set('Authorization', `Bearer ${userToken}`);
     const titles = response.body.map(r => r.title);
   
-    assert.strictEqual(response.body.length, helper.initialBlogs.length + 1);
+    assert.strictEqual(response.body.length, 2);
     assert(titles.includes('First class tests'));
     
   });
@@ -178,14 +173,15 @@ describe('creation of blogs once users is created', () => {
     };
     const userToken = await helper.userTokenForBlogs('Edsger W. Dijkstra');
     await api.post('/api/blogs').set('Authorization', `Bearer ${userToken}`).send(newBlog).expect(201).expect('Content-Type',/application\/json/);
-    const response = await api.get('/api/blogs');
+    const response = await api.get('/api/blogs').set('Authorization', `Bearer ${userToken}`).send(newBlog);
     const blog = response.body.find(r => r.title === newBlog.title);
   
     assert(blog.likes === 0);
   });
   
   test('unique identifier name is id', async () => {
-    const response = await api.get('/api/blogs');
+    const userToken = await helper.userTokenForBlogs('Edsger W. Dijkstra');
+    const response = await api.get('/api/blogs').set('Authorization', `Bearer ${userToken}`);
     const propertyName = Object.keys(response.body[0]).find(key => key === 'id');
   
     assert.strictEqual(propertyName, 'id');
@@ -205,34 +201,36 @@ describe('creation of blogs once users is created', () => {
   });
   
   test('deletion of a blog with valid user', async () => {
-    const blogsAtStart = await api.get('/api/blogs');
+    const userToken = await helper.userTokenForBlogs('Matti Luukkainen');
+    const blogsAtStart = await api.get('/api/blogs').set('Authorization', `Bearer ${userToken}`);
     const blogToDelete = blogsAtStart.body.find(u => u.user.username === 'mluukkai');
-    const userToken = await helper.userTokenForBlogs(blogToDelete.user.name);
     await api.delete(`/api/blogs/${blogToDelete.id}`).set('Authorization', `Bearer ${userToken}`).expect(204);
   
-    const blogsAtEnd = await api.get('/api/blogs');
-    assert.strictEqual(blogsAtEnd.body.length, helper.initialBlogs.length - 1);
+    const blogsAtEnd = await api.get('/api/blogs').set('Authorization', `Bearer ${userToken}`);
+    assert.strictEqual(blogsAtEnd.body.length, 0);
   });
 
   test('deletion of a blog fail with invalid user', async () => {
-    const blogsAtStart = await api.get('/api/blogs');
+    const userTokenValid = await helper.userTokenForBlogs('Matti Luukkainen');
+    const blogsAtStart = await api.get('/api/blogs').set('Authorization', `Bearer ${userTokenValid}`);
     const blogToDelete = blogsAtStart.body.find(u => u.user.username === 'mluukkai');
-    const invalidUserToDelete = blogsAtStart.body.find(u => u.user.username !== 'mluukkai');
-    const userToken = await helper.userTokenForBlogs(invalidUserToDelete.user.name);
-    await api.delete(`/api/blogs/${blogToDelete.id}`).set('Authorization', `Bearer ${userToken}`).expect(403);
+    const userTokenInvalid = await helper.userTokenForBlogs('Edsger W. Dijkstra');
+    
+    await api.delete(`/api/blogs/${blogToDelete.id}`).set('Authorization', `Bearer ${userTokenInvalid}`).expect(403);
   
-    const blogsAtEnd = await api.get('/api/blogs');
-    assert.strictEqual(blogsAtEnd.body.length, helper.initialBlogs.length);
+    const blogsAtEnd = await api.get('/api/blogs').set('Authorization', `Bearer ${userTokenValid}`);
+    assert.strictEqual(blogsAtEnd.body.length, 1);
   });
   
   test('update a blog', async () => {
-    const blogsAtStart = await api.get('/api/blogs');
+    const userToken = await helper.userTokenForBlogs('Matti Luukkainen');
+    const blogsAtStart = await api.get('/api/blogs').set('Authorization', `Bearer ${userToken}`);
     let blogToUpdate = blogsAtStart.body[0];
     blogToUpdate.likes = blogToUpdate.likes + 1;
     const userId = blogToUpdate.user.id;
     blogToUpdate.user = userId;
   
-    const result = await api.put(`/api/blogs/${blogToUpdate.id}`).send(blogToUpdate).expect(200).expect('Content-Type',/application\/json/);
+    const result = await api.put(`/api/blogs/${blogToUpdate.id}`).set('Authorization', `Bearer ${userToken}`).send(blogToUpdate).expect(200).expect('Content-Type',/application\/json/);
   
     assert.deepStrictEqual(result.body, blogToUpdate);
   });

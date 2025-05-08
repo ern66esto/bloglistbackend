@@ -1,0 +1,17 @@
+{
+  "name": "e2eplaywright",
+  "version": "1.0.0",
+  "description": "e2e integration test",
+  "license": "ISC",
+  "author": "ernesto gonzalez",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.13"
+  }
+}
